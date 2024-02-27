@@ -62,10 +62,40 @@ class TransformerLayer(nn.Module):
         should both be of this length.
         """
         super().__init__()
+        self.d_model = d_model
+        self.d_internal = d_internal
         raise Exception("Implement me")
 
     def forward(self, input_vecs):
+        # (1) self-attention (single-headed is fine; you can use either backward-only or bidirectional attention); 
+        # Wq = nn.Linear(self.d_model, self.d_internal)
+        # Wk = nn.Linear(self.d_model, self.d_internal)
+        # Wv = nn.Linear(self.d_model, self.d_internal)
+        d = input_vecs.shape[1]
+        Wq = nn.Parameter(torch.randn(self.d_internal, d))
+        Wk = nn.Parameter(torch.randn(self.d_internal, d))
+        Wv = nn.Parameter(torch.randn(self.d_internal, d))
+        
+        x = input_vecs.shape[0]
+        q = torch.matmul(Wq, input_vecs)
+        k = torch.matmul(Wk, input_vecs)
+        v = torch.matmul(Wv, input_vecs)
+        
+        keys = Wk.matmul(input_vecs.T).T
+        values = Wv.matmul(input_vecs.T).T
+        # Compute pairwise similarities between keys and queries
+        similarity = torch.matmul(q, k.transpose(-2, -1))
+        # Normalize with softmax
+        similarity = torch.nn.functional.softmax(similarity, dim=-1)
+        # Compute output for each word as weighted sum of values
+        output = torch.matmul(similarity, v)
+        
+        
+        # (2) residual connection; 
+        # (3) Linear layer, nonlinearity, and Linear layer; 
+        # (4) final residual connection. 
         raise Exception("Implement me")
+    
 
 
 # Implementation of positional encoding that you can use in your network
