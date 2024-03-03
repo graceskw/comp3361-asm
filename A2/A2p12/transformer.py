@@ -39,7 +39,13 @@ class Transformer(nn.Module):
         :param num_layers: number of TransformerLayers to use; can be whatever you want
         """
         super().__init__()
-        raise Exception("Implement me")
+        self.vocab_size = vocab_size
+        self.num_positions = num_positions
+        self.d_model = d_model
+        self.d_internal = d_internal
+        self.num_classes = num_classes
+        self.num_layers = num_layers
+        # raise Exception("Implement me")
 
     def forward(self, indices):
         """
@@ -48,7 +54,25 @@ class Transformer(nn.Module):
         :return: A tuple of the softmax log probabilities (should be a 20x3 matrix) and a list of the attention
         maps you use in your layers (can be variable length, but each should be a 20x20 matrix)
         """
-        raise Exception("Implement me")
+        # (1) adding positional encodings to the input (see the PositionalEncoding class; but we recommend leaving these out for now) 
+        pos_encoding = PositionalEncoding(self.d_model, self.num_positions, True)
+        indices = pos_encoding(indices)
+        
+        # (2) using one or more of your TransformerLayers; 
+        for i in range(0, self.num_layers):
+            temp = TransformerLayer(self.d_model, self.d_internal)
+            indices = temp(indices)
+        
+        # (3) using Linear and softmax layers to make the prediction. You are
+        # simultaneously making predictions over each position in the sequence. Your network should return the
+        # log probabilities at the output layer (a 20x3 matrix) as well as the attentions you compute, which are then
+        # plotted for you for visualization purposes in plots
+        linear = nn.Linear(self.d_model, self.num_classes)
+        output = linear(indices)
+        softmax = nn.Softmax(dim=1)
+        output = softmax(output)
+        return output
+        # raise Exception("Implement me")
 
 
 # Your implementation of the Transformer layer goes here. It should take vectors and return the same number of vectors
@@ -64,7 +88,7 @@ class TransformerLayer(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.d_internal = d_internal
-        raise Exception("Implement me")
+        # raise Exception("Implement me")
 
     def forward(self, input_vecs):
         # (1) self-attention (single-headed is fine; you can use either backward-only or bidirectional attention); 
@@ -101,7 +125,7 @@ class TransformerLayer(nn.Module):
 
         # (4) final residual connection. 
         output += input_vecs
-        raise Exception("Implement me")
+        # raise Exception("Implement me")
     
 
 
