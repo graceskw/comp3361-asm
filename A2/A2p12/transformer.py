@@ -68,13 +68,13 @@ class TransformerLayer(nn.Module):
 
     def forward(self, input_vecs):
         # (1) self-attention (single-headed is fine; you can use either backward-only or bidirectional attention); 
-        # Wq = nn.Linear(self.d_model, self.d_internal)
-        # Wk = nn.Linear(self.d_model, self.d_internal)
-        # Wv = nn.Linear(self.d_model, self.d_internal)
+        Wq = nn.Linear(self.d_model, self.d_internal)
+        Wk = nn.Linear(self.d_model, self.d_internal)
+        Wv = nn.Linear(self.d_model, self.d_internal)
         d = input_vecs.shape[1]
-        Wq = nn.Parameter(torch.randn(self.d_internal, d))
-        Wk = nn.Parameter(torch.randn(self.d_internal, d))
-        Wv = nn.Parameter(torch.randn(self.d_internal, d))
+        # Wq = nn.Parameter(torch.randn(self.d_internal, d))
+        # Wk = nn.Parameter(torch.randn(self.d_internal, d))
+        # Wv = nn.Parameter(torch.randn(self.d_internal, d))
         
         x = input_vecs.shape[0]
         q = torch.matmul(Wq, input_vecs)
@@ -83,17 +83,24 @@ class TransformerLayer(nn.Module):
         
         keys = Wk.matmul(input_vecs.T).T
         values = Wv.matmul(input_vecs.T).T
-        # Compute pairwise similarities between keys and queries
-        similarity = torch.matmul(q, k.transpose(-2, -1))
-        # Normalize with softmax
+        # softmax(QK^T/sqrt(d_k))V
+        similarity = torch.matmul(q, k.transpose(-2, -1))/np.sqrt(self.d_internal)
         similarity = torch.nn.functional.softmax(similarity, dim=-1)
-        # Compute output for each word as weighted sum of values
         output = torch.matmul(similarity, v)
         
-        
         # (2) residual connection; 
+        output += input_vecs
+        
         # (3) Linear layer, nonlinearity, and Linear layer; 
+        linear1 = nn.Linear(self.d_model, self.d_internal)
+        output = linear1(output)
+        relu = nn.ReLU()
+        output = relu(output)
+        linear2 = nn.Linear(self.d_internal, self.d_model)
+        output = linear2(output)
+
         # (4) final residual connection. 
+        output += input_vecs
         raise Exception("Implement me")
     
 
