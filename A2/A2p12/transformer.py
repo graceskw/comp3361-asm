@@ -22,8 +22,11 @@ class LetterCountingExample(object):
         self.input_indexed = np.array([vocab_index.index_of(ci) for ci in input])
         self.input_tensor = torch.LongTensor(self.input_indexed)
         # print("input tensor shape", self.input_tensor.shape)
+        # print("input tensor", self.input_tensor)
         self.output = output
         self.output_tensor = torch.LongTensor(self.output)
+        # print("output tensor", self.output_tensor)
+        # print("output tensor shape", self.output_tensor.shape)
 
 
 # Should contain your overall Transformer implementation. You will want to use Transformer layer to implement
@@ -236,11 +239,7 @@ class PositionalEncoding(nn.Module):
 
 # This is a skeleton for train_classifier: you can implement this however you want
 def train_classifier(args, train, dev):
-    # raise Exception("Not fully implemented yet")
-
-    # The following code DOES NOT WORK but can be a starting point for your implementation
-    # Some suggested snippets to use:
-    model = Transformer(vocab_size=20, num_positions=20, d_model=100, d_internal=20, num_classes=3, num_layers=2)
+    model = Transformer(vocab_size=27, num_positions=20, d_model=100, d_internal=20, num_classes=3, num_layers=2)
     model.zero_grad()
     model.train()
     # trainOutputNP = np.array([ex.output for ex in train])
