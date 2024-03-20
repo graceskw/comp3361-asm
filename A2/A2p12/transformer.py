@@ -101,9 +101,9 @@ class TransformerLayer(nn.Module):
 
     def forward(self, input_vecs):
         # (1) self-attention (single-headed is fine; you can use either backward-only or bidirectional attention); 
-        # Wq = nn.Linear(self.d_model, self.d_internal)
-        # Wk = nn.Linear(self.d_model, self.d_internal)
-        # Wv = nn.Linear(self.d_model, self.d_internal)
+        # Wq = nn.Linear(self.d_model, self.d_model)
+        # Wk = nn.Linear(self.d_model, self.d_model)
+        # Wv = nn.Linear(self.d_model, self.d_model)
         # d = input_vecs.size(1)
         # d = input_vecs.shape[0]
         d = input_vecs.shape[1]
@@ -111,7 +111,8 @@ class TransformerLayer(nn.Module):
         print("input_vecs.shape", input_vecs.shape)
         Wq = nn.Parameter(torch.randn(self.d_internal, d))
         Wk = nn.Parameter(torch.randn(self.d_internal, d))
-        Wv = nn.Parameter(torch.randn(self.d_internal, d))
+        Wv = nn.Parameter(torch.randn(d, d))
+        # Wv = nn.Parameter(torch.randn(self.d_internal, d))
         
         # # # x = input_vecs.shape[0]
         # # q = torch.matmul(Wq, input_vecs[0].float())
@@ -134,43 +135,65 @@ class TransformerLayer(nn.Module):
         output = torch.zeros(input_vecs.size(0), self.d_internal)
         # output = torch.zeros_like(input_vecs.float().t())
         for i in range(input_vecs.size(0)):
+            # q_i = torch.attematmul(Wq, input_vecs[i].float())
             q_i = torch.matmul(Wq, input_vecs[i].float())
             k_i = torch.matmul(Wk, input_vecs[i].float())
             v_i = torch.matmul(Wv, input_vecs[i].float())
-            similarity_i = torch.matmul(q_i, k_i) / np.sqrt(self.d_internal)
+            similarity_i = torch.matmul(q_i, k_i.transpose(-1, 0)) / np.sqrt(q_i.size(-1))
+            # similarity_i = torch.matmul(q_i, k_i) / np.sqrt(self.d_internal)
             similarity_i = torch.nn.functional.softmax(similarity_i, dim=-1)
             # output_i = torch.matmul(similarity_i, v_i)
             output_i = similarity_i * v_i
             # output_i += input_vecs.float()
             # output_i += Wv.matmul(input_vecs[i].float())
+            output_i = output_i[:20]
             output[i] = output_i
         
         # (2) residual connection; 
-        # output += input_vecs[0]
-        # output += input_vecs.float().t()[0]
-        # Define a 20x50 matrix
-        W_residual = torch.randn((input_vecs.shape, d), requires_grad=True)
-        # W_residual = torch.randn((20, self.d_internal), requires_grad=True)
+        # Define a weight matrix for the residual connection
+        W_residual = torch.randn((input_vecs.size(1), self.d_internal), requires_grad=True)
 
         # Transform input_vecs to a 10000x50 matrix
         input_vecs_transformed = torch.matmul(input_vecs.float(), W_residual)
 
         # Add the residual connection to the output
         output += input_vecs_transformed
+
         
         # (3) Linear layer, nonlinearity, and Linear layer; 
-        # linear1 = nn.Linear(self.d_internal, d)
-        linear1 = nn.Linear(self.d_model, d)
-        # linear1 = nn.Linear(self.d_model, self.d_internal)
-        output = linear1(output.t())
+        # # linear1 = nn.Linear(self.d_internal, d)
+        # linear1 = nn.Linear(self.d_model, d)
+        # # linear1 = nn.Linear(self.d_model, self.d_internal)
+        # output = linear1(output.t())
+        # Define a linear layer with the right input and output dimensions
+        # linear1 = nn.Linear(input_vecs.size(1), self.d_internal)
+        linear1 = nn.Linear(self.d_internal, self.d_model)
+
+        # Apply the linear transformation to output
+        output = linear1(output)
         relu = nn.ReLU()
         output = relu(output)
-        # linear2 = nn.Linear(self.d_model, self.d_internal)
-        linear2 = nn.Linear(self.d_internal, d)
-        output = linear2(output.t())
+        # # linear2 = nn.Linear(self.d_model, self.d_internal)
+        # linear2 = nn.Linear(self.d_internal, d)
+        # output = linear2(output.t())
+        # Define a linear layer with the right input and output dimensions
+        linear2 = nn.Linear(self.d_internal, self.d_model)
 
+        # Apply the linear transformation to output
+        output = linear2(output)
+        print("output.shape", output.shape)
+        print("input_vecs.shape", input_vecs.shape)
         # (4) final residual connection. 
-        output += input_vecs
+        # Define a linear layer with the right input and output dimensions
+        # Define a linear layer with the right input and output dimensions
+        linear1 = nn.Linear(input_vecs.size(1), self.d_model)
+
+        # Apply the linear transformation to input_vecs
+        input_vecs_transformed = linear1(input_vecs.float())
+
+        # Add input_vecs_transformed to output
+        output += input_vecs_transformed        
+        # output += input_vecs
         
         # return output, similarity
         return output
@@ -217,7 +240,7 @@ def train_classifier(args, train, dev):
 
     # The following code DOES NOT WORK but can be a starting point for your implementation
     # Some suggested snippets to use:
-    model = Transformer(vocab_size=20, num_positions=20, d_model=100, d_internal=50, num_classes=3, num_layers=2)
+    model = Transformer(vocab_size=20, num_positions=20, d_model=100, d_internal=20, num_classes=3, num_layers=2)
     model.zero_grad()
     model.train()
     # trainOutputNP = np.array([ex.output for ex in train])
