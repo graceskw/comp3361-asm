@@ -63,9 +63,9 @@ class Transformer(nn.Module):
         # indices = pos_encoding(indices)
         
         # (2) using one or more of your TransformerLayers; 
-        # print("indices", indices.shape)
+        print("indices", indices.shape)
         for layer in self.layers:
-            indices = layer.forward(indices, self.num_classes)
+            indices = layer.forward(indices)
             # indices, attention = layer(indices)
         
         # for i in range(0, self.num_layers):
@@ -97,10 +97,8 @@ class TransformerLayer(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.d_internal = d_internal
-        self.linear1 = nn.Linear(d_internal, d_internal)
-        self.linear2 = nn.Linear(d_internal, d_model)
+        # raise Exception("Implement me")
 
-<<<<<<< Updated upstream
     def forward(self, input_vecs):
         # (1) self-attention (single-headed is fine; you can use either backward-only or bidirectional attention); 
         # Wq = nn.Linear(self.d_model, self.d_model)
@@ -152,46 +150,12 @@ class TransformerLayer(nn.Module):
             output[i] = output_i
         
         # (2) residual connection; 
-<<<<<<< Updated upstream
         # Define a weight matrix for the residual connection
         W_residual = torch.randn((input_vecs.size(1), self.d_internal), requires_grad=True)
-=======
-        # output += input_vecs[0]
-        # output += input_vecs.float().t()[0]
-        # Define a 20x50 matrix
-        W_residual = torch.randn((input_vecs.shape, d), requires_grad=True)
-        # W_residual = torch.randn((20, self.d_internal), requires_grad=True)
-=======
-    def forward(self, input_vecs, num_classes):
-        self.Wq = nn.Linear(self.d_model, self.d_internal)
-        self.Wk = nn.Linear(self.d_model, self.d_internal)
-        self.Wv = nn.Linear(self.d_model, self.d_internal)
->>>>>>> Stashed changes
 
-        # Convert input_vecs to tensor
-        input_tensors = torch.stack([example.output_tensor for example in input_vecs])
+        # Transform input_vecs to a 10000x50 matrix
+        input_vecs_transformed = torch.matmul(input_vecs.float(), W_residual)
 
-        # Initialize output tensor
-        output = torch.zeros_like(input_tensors)
-
-        # Loop over each input vector
-        for i in range(input_tensors.size(0)):
-            # Compute query, key, and value vectors
-            q_i = self.Wq(input_tensors[i].unsqueeze(0).float())
-            k_i = self.Wk(input_tensors[i].unsqueeze(0).float())
-            v_i = self.Wv(input_tensors[i].unsqueeze(0).float())
-
-            # Compute similarity scores
-            similarity_i = torch.matmul(q_i, k_i.transpose(-2, -1)) / np.sqrt(self.d_internal)
-
-            # Apply softmax to similarity scores
-            similarity_i = torch.nn.functional.softmax(similarity_i, dim=-1)
->>>>>>> Stashed changes
-
-            # Compute output vector
-            output_i = torch.matmul(similarity_i, v_i)
-
-<<<<<<< Updated upstream
         # Add the residual connection to the output
         output += input_vecs_transformed
 
@@ -232,20 +196,10 @@ class TransformerLayer(nn.Module):
         # output += input_vecs
         
         # return output, similarity
-=======
-            # Add residual connection
-            output_i += input_tensors[i].unsqueeze(0)
-
-            # Apply linear layers
-            output_i = self.linear1(output_i)
-            output_i = torch.nn.functional.relu(output_i)
-            output_i = self.linear2(output_i)
-
-            # Update output tensor
-            output[i] = output_i.squeeze(0)
-
->>>>>>> Stashed changes
         return output
+        # raise Exception("Implement me")
+    
+
 
 # Implementation of positional encoding that you can use in your network
 class PositionalEncoding(nn.Module):
@@ -286,31 +240,20 @@ def train_classifier(args, train, dev):
 
     # The following code DOES NOT WORK but can be a starting point for your implementation
     # Some suggested snippets to use:
-<<<<<<< Updated upstream
     model = Transformer(vocab_size=20, num_positions=20, d_model=100, d_internal=20, num_classes=3, num_layers=2)
-=======
-<<<<<<< Updated upstream
-    model = Transformer(vocab_size=20, num_positions=20, d_model=100, d_internal=50, num_classes=3, num_layers=2)
->>>>>>> Stashed changes
     model.zero_grad()
     model.train()
-=======
->>>>>>> Stashed changes
     # trainOutputNP = np.array([ex.output for ex in train])
     # trainSet = LetterCountingExample(train, trainOutputNP, Indexer())
     # print("train", train)
     # print("dev", dev)
     # trainInputTensor = torch.tensor(train[i].input_tensor for i in range(len(train)))
-    # trainInputTensor = [train[i].input_tensor for i in range(len(train))]
-    # trainInputTensor = torch.stack(trainInputTensor)
-    # print("train input tensor", trainInputTensor)
-    # print("train input tensor.shape", trainInputTensor.shape)
-    model = Transformer(vocab_size=20, num_positions=20, d_model=train[0].output_tensor.size(0), d_internal=20, num_classes=3, num_layers=2)
-    model.zero_grad()
-    model.train()
+    trainInputTensor = [train[i].input_tensor for i in range(len(train))]
+    trainInputTensor = torch.stack(trainInputTensor)
+    print("train input tensor", trainInputTensor)
+    print("train input tensor.shape", trainInputTensor.shape)
     # trainOutputTensor = train.output_tensor
-    model.forward(train)
-    # model.forward(trainInputTensor)
+    model.forward(trainInputTensor)
     # for name, param in model.named_parameters():
     #     if param.requires_grad:
     #         print("test for param", name)
@@ -334,29 +277,6 @@ def train_classifier(args, train, dev):
             optimizer.step()
             loss_this_epoch += loss.item()
     model.eval()
-    
-    # # original
-    # model = Transformer(...)
-    # model.zero_grad()
-    # model.train()
-    # optimizer = optim.Adam(model.parameters(), lr=1e-4)
-
-    # num_epochs = 10
-    # for t in range(0, num_epochs):
-    #     loss_this_epoch = 0.0
-    #     random.seed(t)
-    #     # You can use batching if you'd like
-    #     ex_idxs = [i for i in range(0, len(train))]
-    #     random.shuffle(ex_idxs)
-    #     loss_fcn = nn.NLLLoss()
-    #     for ex_idx in ex_idxs:
-    #         loss = loss_fcn(...) # TODO: Run forward and compute loss
-    #         # model.zero_grad()
-    #         # loss.backward()
-    #         # optimizer.step()
-    #         loss_this_epoch += loss.item()
-    # model.eval()
-    # return model
     return model
 
 
