@@ -49,8 +49,9 @@ class Transformer(nn.Module):
         self.d_internal = d_internal
         self.num_classes = num_classes
         self.num_layers = num_layers
-        # self.layers = nn.ModuleList([TransformerLayer(self.d_model, self.d_internal) for _ in range(self.num_layers)])
-        self.layers = [TransformerLayer(self.d_model, self.d_internal) for _ in range(self.num_layers)]
+        self.layers = nn.ModuleList([TransformerLayer(self.d_model, self.d_internal) for _ in range(self.num_layers)])
+        # self.layers = [TransformerLayer(self.d_model, self.d_internal) for _ in range(self.num_layers)]
+        self.linear = nn.Linear(20, self.num_classes)
         # raise Exception("Implement me")
 
     def forward(self, indices):
@@ -79,8 +80,8 @@ class Transformer(nn.Module):
         # simultaneously making predictions over each position in the sequence. Your network should return the
         # log probabilities at the output layer (a 20x3 matrix) as well as the attentions you compute, which are then
         # plotted for you for visualization purposes in plots
-        linear = nn.Linear(self.d_model, self.num_classes)
-        output = linear(indices)
+        # linear = nn.Linear(20, self.num_classes)
+        output = self.linear(indices)
         softmax = nn.Softmax(dim=1)
         output = softmax(output)
         return output
@@ -109,12 +110,12 @@ class TransformerLayer(nn.Module):
         # Wv = nn.Linear(self.d_model, self.d_model)
         # d = input_vecs.size(1)
         # d = input_vecs.shape[0]
-        d = input_vecs.shape[1]
-        print("d", d)
+        # d = input_vecs.shape[1]
+        # print("d", d)
         print("input_vecs.shape", input_vecs.shape)
-        Wq = nn.Parameter(torch.randn(self.d_internal, d))
-        Wk = nn.Parameter(torch.randn(self.d_internal, d))
-        Wv = nn.Parameter(torch.randn(d, d))
+        Wq = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
+        Wk = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
+        Wv = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
         # Wv = nn.Parameter(torch.randn(self.d_internal, d))
         
         # # # x = input_vecs.shape[0]
@@ -139,9 +140,9 @@ class TransformerLayer(nn.Module):
         # output = torch.zeros_like(input_vecs.float().t())
         for i in range(input_vecs.size(0)):
             # q_i = torch.attematmul(Wq, input_vecs[i].float())
-            q_i = torch.matmul(Wq, input_vecs[i].float())
-            k_i = torch.matmul(Wk, input_vecs[i].float())
-            v_i = torch.matmul(Wv, input_vecs[i].float())
+            q_i = torch.matmul(input_vecs[i].float(), Wq)
+            k_i = torch.matmul(input_vecs[i].float(), Wk)
+            v_i = torch.matmul(input_vecs[i].float(), Wv)
             similarity_i = torch.matmul(q_i, k_i.transpose(-1, 0)) / np.sqrt(q_i.size(-1))
             # similarity_i = torch.matmul(q_i, k_i) / np.sqrt(self.d_internal)
             similarity_i = torch.nn.functional.softmax(similarity_i, dim=-1)
@@ -153,14 +154,7 @@ class TransformerLayer(nn.Module):
             output[i] = output_i
         
         # (2) residual connection; 
-        # Define a weight matrix for the residual connection
-        W_residual = torch.randn((input_vecs.size(1), self.d_internal), requires_grad=True)
-
-        # Transform input_vecs to a 10000x50 matrix
-        input_vecs_transformed = torch.matmul(input_vecs.float(), W_residual)
-
-        # Add the residual connection to the output
-        output += input_vecs_transformed
+        output += input_vecs.float()
 
         
         # (3) Linear layer, nonlinearity, and Linear layer; 
@@ -173,30 +167,33 @@ class TransformerLayer(nn.Module):
         linear1 = nn.Linear(self.d_internal, self.d_model)
 
         # Apply the linear transformation to output
+        print("output.shape", output.shape)
         output = linear1(output)
         relu = nn.ReLU()
+        print("output.shape", output.shape)
         output = relu(output)
         # # linear2 = nn.Linear(self.d_model, self.d_internal)
         # linear2 = nn.Linear(self.d_internal, d)
         # output = linear2(output.t())
         # Define a linear layer with the right input and output dimensions
-        linear2 = nn.Linear(self.d_internal, self.d_model)
+        # linear2 = nn.Linear(input_vecs.size(0), self.d_internal)
+        linear2 = nn.Linear(self.d_model, self.d_internal)
 
         # Apply the linear transformation to output
-        output = linear2(output)
         print("output.shape", output.shape)
+        output = linear2(output)
         print("input_vecs.shape", input_vecs.shape)
         # (4) final residual connection. 
-        # Define a linear layer with the right input and output dimensions
-        # Define a linear layer with the right input and output dimensions
-        linear1 = nn.Linear(input_vecs.size(1), self.d_model)
+        # # Define a linear layer with the right input and output dimensions
+        # # Define a linear layer with the right input and output dimensions
+        # linear1 = nn.Linear(input_vecs.size(1), self.d_model)
 
-        # Apply the linear transformation to input_vecs
-        input_vecs_transformed = linear1(input_vecs.float())
+        # # Apply the linear transformation to input_vecs
+        # input_vecs_transformed = linear1(input_vecs.float())
 
-        # Add input_vecs_transformed to output
-        output += input_vecs_transformed        
-        # output += input_vecs
+        # # Add input_vecs_transformed to output
+        # output += input_vecs_transformed        
+        output += input_vecs.float()
         
         # return output, similarity
         return output
@@ -256,6 +253,8 @@ def train_classifier(args, train, dev):
     # for name, param in model.named_parameters():
     #     if param.requires_grad:
     #         print("test for param", name)
+    for name, param in model.named_parameters():
+        print(name, param.requires_grad)
     for param in model.parameters():
         param.requires_grad = True
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
@@ -270,7 +269,16 @@ def train_classifier(args, train, dev):
         random.shuffle(ex_idxs)
         loss_fcn = nn.NLLLoss()
         for ex_idx in ex_idxs:
-            loss = loss_fcn(train, 3) # TODO: Run forward and compute loss
+            # Get the input and target for this example
+            input = train[ex_idx].input_tensor
+            target = train[ex_idx].output_tensor
+
+            # Run the model on the input
+            output = model(input)
+
+            # Compute the loss
+            loss = loss_fcn(output, target)
+            # loss = loss_fcn(train[ex_idx].input_tensor, train[ex_idx].output_tensor) # TODO: Run forward and compute loss
             model.zero_grad()
             loss.backward()
             optimizer.step()
