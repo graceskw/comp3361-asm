@@ -64,11 +64,13 @@ class Transformer(nn.Module):
         """
         # print("transformer forward")
         # (1) adding positional encodings to the input (see the PositionalEncoding class; but we recommend leaving these out for now) 
-        # pos_encoding = PositionalEncoding(self.d_model, self.num_positions, True)
-        # indices = pos_encoding(indices)
+        indices = indices.unsqueeze(1)  # Reshape indices to (20, 1)
+        indices = indices.expand(-1, 100)  # Repeat indices along the second dimension to get shape (20, 100)
+        pos_encoding = PositionalEncoding(self.d_model, self.num_positions, True)
+        indices = pos_encoding(indices)
         
         # (2) using one or more of your TransformerLayers; 
-        # print("indices", indices.shape)
+        print("indices", indices.shape, indices)
         for layer in self.layers:
             # for i in range(self.batch_size):
             #     if i >= indices.size(0):
@@ -86,7 +88,18 @@ class Transformer(nn.Module):
         # log probabilities at the output layer (a 20x3 matrix) as well as the attentions you compute, which are then
         # plotted for you for visualization purposes in plots
         # linear = nn.Linear(20, self.num_classes)
+        # print(indices)
+        # print(indices.shape)
+        # print(indices.float())
+
+        # output = torch.zeros(self.batch_size, 20, 3)
+        # for i in range(self.batch_size):
+        #     if i >= indices.size(0):
+        #         break
+        #     output[i] = self.linear(indices[i].float())
+        output = torch.zeros(20, 3)
         output = self.linear(indices.float())
+        # print(output)
         softmax = nn.Softmax(dim=1)
         output = softmax(output)
         return output
@@ -106,57 +119,62 @@ class TransformerLayer(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.d_internal = d_internal
+        self.linear1 = nn.Linear(self.d_internal, self.d_model)
+        self.relu = nn.ReLU()
+        self.linear2 = nn.Linear(self.d_model, self.d_internal)
         # raise Exception("Implement me")
 
     def forward(self, input_vecs):
         # print("input_vecs.shape", input_vecs.shape)
-        Wq = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
-        Wk = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
-        Wv = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
+        # Wq = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
+        # Wk = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
+        # Wv = nn.Parameter(torch.randn(self.d_internal, self.d_internal))
+        Wq = nn.Parameter(torch.randn(self.d_model, self.d_internal))
+        Wk = nn.Parameter(torch.randn(self.d_model, self.d_internal))
+        Wv = nn.Parameter(torch.randn(self.d_model, self.d_internal))
         
-        # output = torch.zeros(20, self.d_internal)
+        attentions = torch.zeros_like(input_vecs.float().t())
         output = torch.zeros_like(input_vecs.float().t())
+        # attentions = torch.zeros_like(input_vecs.float().t())
+        # output = torch.zeros_like(input_vecs.float().t())
         for i in range(input_vecs.size(0)):
-            q_i = torch.matmul(input_vecs[i].float(), Wq)
-            k_i = torch.matmul(input_vecs[i].float(), Wk)
-            v_i = torch.matmul(input_vecs[i].float(), Wv)
+            q_i = torch.matmul(input_vecs[0][i].float(), Wq)
+            k_i = torch.matmul(input_vecs[0][i].float(), Wk)
+            v_i = torch.matmul(input_vecs[0][i].float(), Wv)
             similarity_i = torch.matmul(q_i, k_i.transpose(-1, 0)) / np.sqrt(q_i.size(-1))
             similarity_i = torch.nn.functional.softmax(similarity_i, dim=-1)
+            attentions[i] = similarity_i
             output_i = similarity_i * v_i
             output_i = output_i[:20]
             output[i] = output_i
 
-        # q_i = torch.matmul(input_vecs.float(), Wq)
-        # k_i = torch.matmul(input_vecs.float(), Wk)
-        # v_i = torch.matmul(input_vecs.float(), Wv)
+        # attentions = torch.zeros(20, self.d_model)
+        # output = torch.zeros(20, self.d_model)
+        # print("input_vecs", input_vecs)
+        # q_i = torch.matmul(input_vecs[0].float(), Wq)
+        # k_i = torch.matmul(input_vecs[0].float(), Wk)
+        # v_i = torch.matmul(input_vecs[0].float(), Wv)
         # similarity_i = torch.matmul(q_i, k_i.transpose(-1, 0)) / np.sqrt(q_i.size(-1))
         # similarity_i = torch.nn.functional.softmax(similarity_i, dim=-1)
         # output = similarity_i * v_i
-        # output = output[:20]
+        # output = output[:100]
 
         # (2) residual connection; 
         output += input_vecs.float()
 
-        
         # (3) Linear layer, nonlinearity, and Linear layer; 
-        linear1 = nn.Linear(self.d_internal, self.d_model)
-
-        # Apply the linear transformation to output
-        # print("output.shape", output.shape)
-        output = linear1(output)
-        relu = nn.ReLU()
-        # print("output.shape", output.shape)
-        output = relu(output)
-        linear2 = nn.Linear(self.d_model, self.d_internal)
-        # Apply the linear transformation to output
-        # print("output.shape", output.shape)
-        output = linear2(output)
-        # print("input_vecs.shape", input_vecs.shape)
-        
+        output = self.linear1(output)
+        output = self.relu(output)
+        output = self.linear2(output)
+        # linear1 = nn.Linear(self.d_internal, self.d_model)
+        # relu = nn.ReLU()
+        # linear2 = nn.Linear(self.d_model, self.d_internal)
+    
         # (4) final residual connection.       
         output += input_vecs.float()
+        print("attentions", attentions.shape, attentions)
         
-        return output
+        return output, attentions
     
 
 
@@ -200,22 +218,16 @@ def train_classifier(args, train, dev):
     model = Transformer(vocab_size=27, num_positions=20, d_model=100, d_internal=20, num_classes=3, num_layers=2, batch_size=batch_size)
     model.zero_grad()
     model.train()
-    # trainOutputNP = np.array([ex.output for ex in train])
-    # trainSet = LetterCountingExample(train, trainOutputNP, Indexer())
-    # print("train", train)
-    # print("dev", dev)
-    # trainInputTensor = torch.tensor(train[i].input_tensor for i in range(len(train)))
-    trainInputTensor = [train[i].input_tensor for i in range(len(train))]
-    trainInputTensor = torch.stack(trainInputTensor)
-    # print("train input tensor", trainInputTensor)
-    # print("train input tensor.shape", trainInputTensor.shape)
-    # trainOutputTensor = train.output_tensor
-    for i in range(0, len(train), batch_size):
-    # Get the inputs for this batch
-        inputs = trainInputTensor[i:i+batch_size]
+    
+    # trainInputTensor = [train[i].input_tensor for i in range(len(train))]
+    # trainInputTensor = torch.stack(trainInputTensor)
+    # for i in range(0, len(train), batch_size):
+    # # Get the inputs for this batch
+    #     inputs = trainInputTensor[i:i+batch_size]
 
-        # Run the model on the inputs
-        model.forward(inputs)
+    #     # Run the model on the inputs
+    #     model.forward(inputs)
+        
     # model.forward(trainInputTensor)
     # for name, param in model.named_parameters():
     #     if param.requires_grad:
@@ -235,37 +247,69 @@ def train_classifier(args, train, dev):
         ex_idxs = [i for i in range(0, len(train))]
         random.shuffle(ex_idxs)
         loss_fcn = nn.NLLLoss()
-        
-        for batch_idx in range(num_batches):
-            batch_start = batch_idx * batch_size
-            batch_end = (batch_idx + 1) * batch_size
-            batch_indices = ex_idxs[batch_start:batch_end]
 
-            # Get the inputs and targets for this batch
-            inputs = torch.stack([train[idx].input_tensor for idx in batch_indices])
-            targets = torch.stack([train[idx].output_tensor for idx in batch_indices])
-
-            # Run the model on the inputs and compute the loss
-            outputs = model.forward(inputs)
-            loss = loss_fcn(outputs, targets)
-
-            # Backpropagation
+        for ex_idx in ex_idxs:
+            ex = train[ex_idx]
+            (log_probs, attn_maps) = model.forward(ex.input_tensor)
+            
+            outputs = model.forward(train[ex_idx].input_tensor)
+            print("ex_idx", ex_idx, "outputs", outputs.shape, outputs)
+            # targets = torch.stack([train[ex_idx].output_tensor])
+            targets = train[ex_idx].output_tensor
+            
+            loss = loss_fcn(outputs, targets) # TODO: Run forward and compute loss
             model.zero_grad()
             loss.backward()
             optimizer.step()
-
-            # Accumulate the loss
             loss_this_epoch += loss.item()
-        # for ex_idx in ex_idxs:
-        #     # Compute the loss
-        #     loss = loss_fcn(...)
-        #     model.zero_grad()
-        #     loss.backward()
-        #     optimizer.step()
-        #     loss_this_epoch += loss.item()
-    print("Loss for epoch %i: %f" % (t, loss_this_epoch))
+        
+    #     for batch_idx in range(num_batches):
+    #         batch_start = batch_idx * batch_size
+    #         batch_end = (batch_idx + 1) * batch_size
+    #         batch_indices = ex_idxs[batch_start:batch_end]
+
+    #         # Get the inputs and targets for this batch
+    #         inputs = torch.stack([train[idx].input_tensor for idx in batch_indices])
+    #         # print("inputs", inputs.shape, inputs)
+    #         targets = torch.stack([train[idx].output_tensor for idx in batch_indices])
+    #         # print("targets", targets.shape, targets)
+
+    #         # Run the model on the inputs and compute the loss
+    #         outputs = model.forward(inputs)
+    #         # print("outputs", outputs.shape, outputs)
+    #         # for i in range(len(inputs)):
+    #         #     # Compute the loss
+    #         #     # outputs = model.forward(inputs[i])
+    #         #     loss = loss_fcn(outputs[i], targets[i])
+    #         loss = loss_fcn(outputs.view(-1, outputs.shape[-1]), targets.view(-1))
+
+    #         # Backpropagation
+    #         model.zero_grad()
+    #         loss.backward()
+    #         optimizer.step()
+
+    #         # Accumulate the loss
+    #         loss_this_epoch += loss.item()
+
+    # #         loss = loss_fcn(outputs, targets)
+
+    # #         # Backpropagation
+    # #         model.zero_grad()
+    # #         loss.backward()
+    # #         optimizer.step()
+
+    # #         # Accumulate the loss
+    # #         loss_this_epoch += loss.item()
+    #     # for ex_idx in ex_idxs:
+    #     #     # Compute the loss
+    #     #     loss = loss_fcn(...)
+    #     #     model.zero_grad()
+    #     #     loss.backward()
+    #     #     optimizer.step()
+    #     #     loss_this_epoch += loss.item()
+    # # print("Loss for epoch %i: %f" % (t, loss_this_epoch))
     model.eval()
-    print("model", model)
+    # print("model", model)
     return model
 
 
