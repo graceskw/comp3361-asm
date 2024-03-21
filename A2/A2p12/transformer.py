@@ -196,6 +196,7 @@ class PositionalEncoding(nn.Module):
 # This is a skeleton for train_classifier: you can implement this however you want
 def train_classifier(args, train, dev):
     batch_size = 20
+    num_batches = len(train) // batch_size
     model = Transformer(vocab_size=27, num_positions=20, d_model=100, d_internal=20, num_classes=3, num_layers=2, batch_size=batch_size)
     model.zero_grad()
     model.train()
@@ -234,13 +235,34 @@ def train_classifier(args, train, dev):
         ex_idxs = [i for i in range(0, len(train))]
         random.shuffle(ex_idxs)
         loss_fcn = nn.NLLLoss()
-        for ex_idx in ex_idxs:
-            # Compute the loss
-            loss = loss_fcn(...)
+        
+        for batch_idx in range(num_batches):
+            batch_start = batch_idx * batch_size
+            batch_end = (batch_idx + 1) * batch_size
+            batch_indices = ex_idxs[batch_start:batch_end]
+
+            # Get the inputs and targets for this batch
+            inputs = torch.stack([train[idx].input_tensor for idx in batch_indices])
+            targets = torch.stack([train[idx].output_tensor for idx in batch_indices])
+
+            # Run the model on the inputs and compute the loss
+            outputs = model.forward(inputs)
+            loss = loss_fcn(outputs, targets)
+
+            # Backpropagation
             model.zero_grad()
             loss.backward()
             optimizer.step()
+
+            # Accumulate the loss
             loss_this_epoch += loss.item()
+        # for ex_idx in ex_idxs:
+        #     # Compute the loss
+        #     loss = loss_fcn(...)
+        #     model.zero_grad()
+        #     loss.backward()
+        #     optimizer.step()
+        #     loss_this_epoch += loss.item()
     print("Loss for epoch %i: %f" % (t, loss_this_epoch))
     model.eval()
     print("model", model)
