@@ -46,7 +46,9 @@ class Transformer(nn.Module):
         self.num_layers = num_layers
         self.layers = nn.ModuleList([TransformerLayer(self.d_model, self.d_internal) for _ in range(self.num_layers)])
         self.linear = nn.Linear(d_model, self.num_classes)
-
+        self.embedding = nn.Embedding(self.vocab_size, self.d_model)
+        self.pos = PositionalEncoding(self.d_model, self.num_positions, True)
+        self.softmax = nn.Softmax(dim=1)
     def forward(self, indices):
         """
 
@@ -55,22 +57,25 @@ class Transformer(nn.Module):
         maps you use in your layers (can be variable length, but each should be a 20x20 matrix)
         """
         # (1) adding positional encodings to the input (see the PositionalEncoding class; but we recommend leaving these out for now) 
-        input = nn.Embedding(self.vocab_size, self.d_model)(indices)
-        input = PositionalEncoding(self.d_model, self.num_positions, True)(input)
+        # input = nn.Embedding(self.vocab_size, self.d_model)(indices)
+        input = self.embedding(indices)
+        input = self.pos(input)
+        # input = PositionalEncoding(self.d_model, self.num_positions, True)(input)
         
         # (2) using one or more of your TransformerLayers; 
         attention = []
         for layer in self.layers:
-            input, atten = layer.forward(input)
+            input, atten = layer(input)
             attention.append(atten)
+        attention.append(atten)
         
         # (3) using Linear and softmax layers to make the prediction. You are
         # simultaneously making predictions over each position in the sequence. Your network should return the
         # log probabilities at the output layer (a 20x3 matrix) as well as the attentions you compute, which are then
         # plotted for you for visualization purposes in plots
-        output = self.linear(input.float())
-        softmax = nn.Softmax(dim=1)
-        output = softmax(output)
+        output = self.linear(input)
+        # softmax = nn.Softmax(dim=1)
+        output = self.softmax(output)
         return output[0], attention[0]
 
 # Your implementation of the Transformer layer goes here. It should take vectors and return the same number of vectors
@@ -89,21 +94,26 @@ class TransformerLayer(nn.Module):
         self.linear1 = nn.Linear(self.d_model, self.d_internal)
         self.relu = nn.ReLU()
         self.linear2 = nn.Linear(self.d_internal, self.d_model)
+        self.query = nn.Linear(self.d_model, self.d_model)
+        self.key = nn.Linear(self.d_model, self.d_model)
+        self.value = nn.Linear(self.d_model, self.d_model)
+        self.softmax = nn.Softmax(dim=-1)
         
     def forward(self, input_vecs):
-        query = nn.Linear(self.d_model, self.d_model)
-        key = nn.Linear(self.d_model, self.d_model)
-        value = nn.Linear(self.d_model, self.d_model)
-        q = query(input_vecs)
-        k = key(input_vecs)
-        v = value(input_vecs)
+        # query = nn.Linear(self.d_model, self.d_model)
+        # key = nn.Linear(self.d_model, self.d_model)
+        # value = nn.Linear(self.d_model, self.d_model)
+        q = self.query(input_vecs)
+        k = self.key(input_vecs)
+        v = self.value(input_vecs)
         
         similarity = torch.matmul(q, k.transpose(-1, -2) / np.sqrt(self.d_internal))
-        similarity = torch.nn.functional.softmax(similarity, dim=-1)
+        # similarity = torch.nn.functional.softmax(similarity, dim=-1)
+        similarity = self.softmax(similarity)
         output = torch.matmul(similarity, v)
 
         # (2) residual connection; 
-        output += input_vecs.float()
+        # output += input_vecs.float()
 
         # (3) Linear layer, nonlinearity, and Linear layer; 
         output = self.linear1(output)
@@ -111,7 +121,7 @@ class TransformerLayer(nn.Module):
         output = self.linear2(output)
     
         # (4) final residual connection.       
-        output += input_vecs.float()
+        # output += input_vecs.float()
         
         return output, similarity
     
@@ -152,9 +162,9 @@ class PositionalEncoding(nn.Module):
 
 # This is a skeleton for train_classifier: you can implement this however you want
 def train_classifier(args, train, dev):
-    d_model = 20
+    d_model = 80
     d_internal = 100
-    num_layers = 2
+    num_layers = 1
     print("Training model with d_model=%i, d_internal=%i, num_layers=%i" % (d_model, d_internal, num_layers))
     model = Transformer(vocab_size=27, num_positions=20, d_model=d_model, d_internal=d_internal, num_classes=3, num_layers=num_layers)
     model.zero_grad()
@@ -171,6 +181,7 @@ def train_classifier(args, train, dev):
         loss_fcn = nn.NLLLoss()
 
         for ex_idx in ex_idxs:
+            optimizer.zero_grad()
             outputs = model.forward(train[ex_idx].input_tensor)[0]
             targets = train[ex_idx].output_tensor
             
