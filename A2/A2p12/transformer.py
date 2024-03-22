@@ -152,7 +152,11 @@ class PositionalEncoding(nn.Module):
 
 # This is a skeleton for train_classifier: you can implement this however you want
 def train_classifier(args, train, dev):
-    model = Transformer(vocab_size=27, num_positions=20, d_model=80, d_internal=100, num_classes=3, num_layers=2)
+    d_model = 20
+    d_internal = 100
+    num_layers = 2
+    print("Training model with d_model=%i, d_internal=%i, num_layers=%i" % (d_model, d_internal, num_layers))
+    model = Transformer(vocab_size=27, num_positions=20, d_model=d_model, d_internal=d_internal, num_classes=3, num_layers=num_layers)
     model.zero_grad()
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
