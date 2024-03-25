@@ -48,52 +48,20 @@ class UniformLanguageModel(LanguageModel):
 
 class NeuralLanguageModel(LanguageModel):
     def __init__(self, train_text, vocab_index, dev_text=None):
-        # raise Exception("Implement me")
         self.chunk_size = 20
-        self.d_model = 512
+        self.d_model = 500
         self.train = train_text
         self.dev = dev_text
         self.voc_size = len(vocab_index)
         self.vocab_index = vocab_index
-        self.transformer_layer = nn.TransformerEncoderLayer(d_model=self.d_model, nhead=8)
-        self.transformer  = nn.TransformerEncoder(self.transformer_layer, 10, mask_check=True)
+        self.transformer_layer = nn.TransformerEncoderLayer(d_model=self.d_model, nhead=10)
+        self.transformer  = nn.TransformerEncoder(self.transformer_layer, 20, mask_check=True)
         self.embedding = nn.Embedding(self.voc_size, self.d_model)
         self.pos_encoder = PositionalEncoding(d_model=self.d_model, num_positions=self.chunk_size)
         self.softmax = nn.Softmax(dim=-1)
 
     # It takes a context and returns the log probability distribution over the next characters given that context as
     # a numpy vector of length equal to the vocabulary size.
-    # def get_next_char_log_probs(self, context):
-    #     log_probs = np.zeros([self.voc_size])
-    #     for i in range(0, len(context), self.chunk_size):
-    #         chunk = ' ' + context[i:i+self.chunk_size-1]
-    #         # chunk = context[i:i+self.chunk_size]
-            
-    #         # add position encoding to context
-    #         chunk_tensor = torch.tensor([self.vocab_index.index_of(c) for c in chunk]).unsqueeze(0)
-    #         # context = PositionalEncoding(d_model=self.d_model, num_positions=self.chunk_size)
-    #         input = self.embedding(chunk_tensor)
-    #         input = self.pos_encoder(input)
-            
-    #         # transformer  = nn.TransformerEncoder(mask_check=True)
-    #         # create triangular matrix of zeros / negative infinities
-    #         # mask = torch.triu(torch.ones(len(input), len(input)), diagonal=1)
-    #         # mask = mask.masked_fill(mask == 1, float('-inf'))
-    #         # mask = torch.triu(torch.ones(len(input), len(input)), diagonal=1).bool()
-    #         # mask = torch.triu(torch.ones(len(input), len(input)) * float('-inf'), diagonal=1)
-    #         mask = torch.triu(torch.ones(len(input), len(input)) * 0, diagonal=1)
-    #         output = self.transformer.forward(input, mask=mask)
-    #         # print(output)
-    #         probs = self.softmax(output)
-    #         # log_probs += np.log(probs.detach().numpy()).sum(axis=(-1, -2))
-    #         log_probs += np.log(probs.detach().numpy()).sum(axis=(-1, -2))
-    #         # log_probs_chunk = np.log(probs.detach().numpy()).sum(axis=(-1, -2))
-    #         # log_probs += log_probs_chunk[0, -1]  # Only take the log prob of the actual next char
-    #         # print(log_probs)
-    #     # np.ndarray([self.voc_size]) * np.log(1.0/self.voc_size)
-    #     # print("log_probs size", log_probs.shape)
-    #     return log_probs
-    #     # raise Exception("Implement me")
     def get_next_char_log_probs(self, context):
         log_probs = np.zeros([self.voc_size])
         for i in range(0, len(context), self.chunk_size - 1):
