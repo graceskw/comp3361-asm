@@ -48,7 +48,7 @@ class Transformer(nn.Module):
         self.linear = nn.Linear(d_model, self.num_classes)
         self.embedding = nn.Embedding(self.vocab_size, self.d_model)
         self.pos = PositionalEncoding(self.d_model, self.num_positions, True)
-        self.softmax = nn.Softmax(dim=1)
+        self.softmax = nn.LogSoftmax(dim=1)
     def forward(self, indices):
         """
 
@@ -74,7 +74,7 @@ class Transformer(nn.Module):
         # log probabilities at the output layer (a 20x3 matrix) as well as the attentions you compute, which are then
         # plotted for you for visualization purposes in plots
         output = self.linear(input)
-        # softmax = nn.Softmax(dim=1)
+        # softmax = nn.LogSoftmax(dim=1)
         output = self.softmax(output)
         return output[0], attention[0]
 
@@ -97,7 +97,7 @@ class TransformerLayer(nn.Module):
         self.query = nn.Linear(self.d_model, self.d_model)
         self.key = nn.Linear(self.d_model, self.d_model)
         self.value = nn.Linear(self.d_model, self.d_model)
-        self.softmax = nn.Softmax(dim=-1)
+        self.softmax = nn.LogSoftmax(dim=-1)
         
     def forward(self, input_vecs):
         # query = nn.Linear(self.d_model, self.d_model)
@@ -162,10 +162,10 @@ class PositionalEncoding(nn.Module):
 
 # This is a skeleton for train_classifier: you can implement this however you want
 def train_classifier(args, train, dev):
-    d_model = 80
+    d_model = 70
     d_internal = 100
     num_layers = 1
-    print("Training model with d_model=%i, d_internal=%i, num_layers=%i" % (d_model, d_internal, num_layers))
+    # print("Training model with d_model=%i, d_internal=%i, num_layers=%i" % (d_model, d_internal, num_layers))
     model = Transformer(vocab_size=27, num_positions=20, d_model=d_model, d_internal=d_internal, num_classes=3, num_layers=num_layers)
     model.zero_grad()
     model.train()
@@ -190,7 +190,7 @@ def train_classifier(args, train, dev):
             loss.backward()
             optimizer.step()
             loss_this_epoch += loss.item()
-        print("Loss for epoch %i: %f" % (t, loss_this_epoch))
+        # print("Loss for epoch %i: %f" % (t, loss_this_epoch))
     model.eval()
     return model
 
