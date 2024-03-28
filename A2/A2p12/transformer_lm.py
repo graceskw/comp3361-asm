@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from transformer import *
+import warnings
+warnings.filterwarnings("ignore")
 
 class LanguageModel(object):
 
