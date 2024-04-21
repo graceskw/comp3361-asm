@@ -48,17 +48,16 @@
 \begin{tabular}{@{}cc@{}}
 \toprule
 Question Number & Selected Option \\ \midrule
-1               &              \\
-2               &              \\
-3               &              \\
-4               &              \\
-5               &              \\
-6               &              \\
-7               &              \\
-8               &              \\
-9               &              \\
-8               &              \\
-10              &              \\
+1               &              C\\
+2               &              D\\
+3               &              C, D\\
+4               &              A\\
+5               &              B\\
+6               &              D\\
+7               &              C\\
+8               &              C\\
+9               &              B\\
+10              &              A\\
 \bottomrule
 \end{tabular}
 \caption{Selected Options for Multi-Choice Questions}
@@ -121,7 +120,7 @@ Question Number & Selected Option \\ \midrule
     \begin{itemize}
         \item[A)] It involves masking and predicting individual tokens rather than spans of tokens.
         \item[B)] It only uses punctuation marks as indicators for span boundaries.
-        \item[C)] It masks contiguous spans of text and trains the model to predict the masked spans, encouraging understanding of longer context.
+        \item\textbf{\textit{[C)] It masks contiguous spans of text and trains the model to predict the masked spans, encouraging understanding of longer context.}}
         \item[D)] It requires the model to correct grammatical errors within the span.
     \end{itemize}
 
@@ -152,7 +151,7 @@ def positional_encoding(L, D):
 
 
 
-\item[C)] 
+\item\textbf{\textit{[C)]}} 
 \begin{lstlisting}[language=Python]
 def positional_encoding(L, D):
     position = torch.arange(L, dtype=torch.float).unsqueeze(1)
@@ -191,7 +190,7 @@ def positional_encoding(L, D):
 
 \item How does Low-Rank Adaptation (LoRA) efficiently fine-tune large pre-trained models for specific tasks?
     \begin{itemize}
-        \item[A)] By freezing the original parameters and training a small set of new parameters introduced as adapters at certain layers, significantly reducing computational needs.
+        \item\textbf{\textit{[A)] By freezing the original parameters and training a small set of new parameters introduced as adapters at certain layers, significantly reducing computational needs.}}
         \item[B)] By applying low-rank matrices to adjust the attention weights, enabling task-specific tuning without extensively retraining the original parameters.
         \item[C)] By pruning less important neurons based on initial assessments, simplifying the model for specific tasks with minimal performance impact.
         \item[D)] By adding task-specific tokens to the model’s vocabulary and fine-tuning their embeddings only, leveraging the existing model for seamless integration.
@@ -210,6 +209,11 @@ $$
 $$
 
 \paragraph{Question 3.1a:} Could you briefly explain the advantages and disadvantages of a high-order Markov language model compared to the second-order one?
+
+Ans:
+    Advantages:
+
+    Disadvantages:
 
 \paragraph{Question 3.1b:} Could you give some examples in English where English grammar suggests that the second-order Markov assumption is clearly violated?
 
