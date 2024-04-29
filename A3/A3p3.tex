@@ -35,7 +35,7 @@
 
 \begin{document}
 \title{COMP3361 Assignment 3 Submission}
-\author{Name: \\ University Number:}
+\author{Name: So Ki Wai Grace\\ University Number: 3035927116}
 \date{Spring 2024}
 \maketitle
 
@@ -51,11 +51,11 @@ Question Number & Selected Option \\ \midrule
 1               &              C\\
 2               &              D\\
 3               &              C, D\\
-4               &              A\\
+4               &              B\\
 5               &              B\\
 6               &              D\\
 7               &              C\\
-8               &              C\\
+8               &              A\\
 9               &              B\\
 10              &              A\\
 \bottomrule
@@ -110,7 +110,7 @@ Question Number & Selected Option \\ \midrule
     \item Select the models that are capable of generating dynamic word embeddings, which can change depending on the surroundings of a word in a sentence.
     \begin{itemize}
         \item[A)] Bag of Words (BoW)
-        \item[B)] Word2Vec 
+        \item\textbf{\textit{[B)] Word2Vec }}
         \item[C)] GloVe
         \item\textbf{\textit{[D)] T5}}
     \end{itemize}
@@ -211,9 +211,12 @@ $$
 \paragraph{Question 3.1a:} Could you briefly explain the advantages and disadvantages of a high-order Markov language model compared to the second-order one?
 
 Ans:
-    Advantages:
+    Advantages: 
+    1. more accurate: with more information and larger context window, the models may perform better when they have higher order as they can capture long-range dependencies
 
     Disadvantages:
+    1. sparce data: the number of possibilities grows exponentially in proportion with the order, making the data more sparce when the order increases. this can cause the performance decrease on unseen data as there are insufficient data to learn from.
+    2. require higher computational power: since higher-order models have more complex calculations, they require more computational power than lower-order models
 
 \paragraph{Question 3.1b:} Could you give some examples in English where English grammar suggests that the second-order Markov assumption is clearly violated?
 
@@ -250,7 +253,18 @@ Given a small document corpus D consisting of two sentences: \{``i hug pugs", ``
 Assume the initial vocabulary includes individual characters and spaces as separate tokens. The BPE algorithm should merge the most frequent adjacent pairs of tokens iteratively until the vocabulary size reaches N=15.
 
 \paragraph{Question 3.3a} What is the final list of the desired vocabulary tokens?
+assume that if there is space, it is added before words
+
+Ans: 
+
+[" ", "f", "g", "h", "i", "n", "p", "s", "u", "ug", " h", " hug", " p", " pug",  " pugs"]
+
 \paragraph{Question 3.3b} What is the final list of document tokens after reaching the desired vocabulary size?
+
+Ans (tokens, frequency):
+
+("i", 1), (" hug", 1), (" pugs", 2), (" hug" "g" "i" "n" "g", 1), (" " "i" "s", 1), (" " "f" "u" "n", 1)
+
 
 \newpage
 \paragraph{Question 3.4} Let $\mathbf{Q} \in \mathbb{R}^{N \times d}$ denote a set of $N$ query vectors, which attend to $M$ key and value vectors, denoted by matrices $\mathbf{K} \in \mathbb{R}^{M \times d}$ and $\mathbf{V} \in \mathbb{R}^{M \times c}$ respectively. For a query vector at position $n$, the softmax attention function computes the following quantity:
@@ -262,4 +276,27 @@ $$
 which is an average of the set of value vectors $\mathbf{V}$ weighted by the normalized similarity between different queries and keys.
 
 Please briefly explain what is the time and space complexity for the attention computation from query $\mathbf{Q}$ to $\mathbf{K}$, $\mathbf{V}$, using the big $O$ notation.
+
+Ans: 
+
+Time:
+
+For N query vectors, 
+computing each dot product of N queries and k keys takes O(NMd) time
+the softmax function sums over M terms, taking O(NM) time to compute for each N query.
+softmax multiplied with each value vector v takes O(NMc) time
+
+Hence the overall time complexity = O(NM(d+c))
+
+Space:
+
+to store softmax results for N queries and M keys, O(NM) space is required
+the output of attention function takes O(Nc) space
+
+Hence the overall space complexity = O(NM + Nc)
+
+
+
+
+
 \end{document}
